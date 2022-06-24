@@ -163,7 +163,7 @@ contract TestToken is IBEP20, Auth {
     string constant _symbol = "TT";
     uint8 constant _decimals = 9;
 
-    uint256 _totalSupply = 1000000000 * (10 ** _decimals);
+    uint256 _totalSupply = 1_000_000_000 * (10 ** _decimals);
     uint256 public _maxTxAmount = (_totalSupply * 1) / 200;
     uint256 public _maxWalletSize = (_totalSupply * 2) / 100;
 
@@ -173,10 +173,9 @@ contract TestToken is IBEP20, Auth {
     mapping (address => bool) isFeeExempt;
     mapping (address => bool) isTxLimitExempt;
 
-    uint256 liquidityFee = 3;
-    uint256 developmentFee = 1;
-    uint256 marketingFee = 5;
-    uint256 totalFee = 9;
+    uint256 public developmentFee = 3;
+    uint256 public marketingFee = 2;
+    uint256 public totalFee = developmentFee.add(marketingFee);
     uint256 feeDenominator = 100;
     
     address private marketingFeeReceiver = 0x3E188aa9e4511BE67Cb46eCE53e9e6f2Be35C1bf;
@@ -239,11 +238,11 @@ contract TestToken is IBEP20, Auth {
 
     function _transferFrom(address sender, address recipient, uint256 amount) internal returns (bool) {
         if(inSwap){ return _basicTransfer(sender, recipient, amount); }
-        
+
         checkTxLimit(sender, amount);
         
-        if (recipient != pair && recipient != DEAD) {
-            require(isTxLimitExempt[recipient] || _balances[recipient] + amount <= _maxWalletSize, "Transfer amount exceeds the bag size.");
+        if (recipient == pair && recipient != DEAD) { // change from "=! pair" to "== pair"
+            require(isTxLimitExempt[recipient] || _balances[recipient] + amount <= _maxWalletSize, "Transfer amount exceeds the maxWalletSize");
         }
         
         if(shouldSwapBack()){ swapBack(); }
@@ -252,7 +251,7 @@ contract TestToken is IBEP20, Auth {
 
         _balances[sender] = _balances[sender].sub(amount, "Insufficient Balance");
 
-        uint256 amountReceived = shouldTakeFee(sender) ? takeFee(sender, recipient, amount) : amount;
+        uint256 amountReceived = shouldTakeFee(sender) ? takeFee(sender, amount) : amount;
         _balances[recipient] = _balances[recipient].add(amountReceived);
 
         emit Transfer(sender, recipient, amountReceived);
@@ -266,6 +265,14 @@ contract TestToken is IBEP20, Auth {
         return true;
     }
 
+    function burn(uint256 _value) public returns (bool) {
+        require(_value <= _balances[msg.sender]);
+        //_balances[msg.sender] = _balances[msg.sender].sub(_value);
+        _transferFrom(msg.sender, DEAD, _value);
+        _totalSupply = _totalSupply.sub(_value);
+        return true;
+    }
+
     function checkTxLimit(address sender, uint256 amount) internal view {
         require(amount <= _maxTxAmount || isTxLimitExempt[sender], "TX Limit Exceeded");
     }
@@ -274,15 +281,8 @@ contract TestToken is IBEP20, Auth {
         return !isFeeExempt[sender];
     }
 
-    function getTotalFee(bool selling) public view returns (uint256) {
-        if(launchedAt + 1 >= block.number){ return feeDenominator.sub(1); }
-        if(selling) { return totalFee.add(1); }
-        return totalFee;
-    }
-
-    function takeFee(address sender, address receiver, uint256 amount) internal returns (uint256) {
-        uint256 feeAmount = amount.mul(getTotalFee(receiver == pair)).div(feeDenominator);
-
+    function takeFee(address sender, uint256 amount) internal returns (uint256) {
+        uint256 feeAmount = amount.mul(marketingFee.add(developmentFee)).div(feeDenominator);
         _balances[address(this)] = _balances[address(this)].add(feeAmount);
         emit Transfer(sender, address(this), feeAmount);
 
@@ -297,15 +297,13 @@ contract TestToken is IBEP20, Auth {
     }
 
     function swapBack() internal swapping {
-        uint256 contractTokenBalance = balanceOf(address(this));
-        uint256 amountToLiquify = contractTokenBalance.mul(liquidityFee).div(totalFee).div(2);
-        uint256 amountToSwap = contractTokenBalance.sub(amountToLiquify);
+        uint256 amountToSwap = balanceOf(address(this));
 
         address[] memory path = new address[](2);
         path[0] = address(this);
         path[1] = WBNB;
 
-        uint256 balanceBefore = address(this).balance;
+        uint256 bnbBalanceBefore = address(this).balance;
 
         router.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amountToSwap,
@@ -314,42 +312,14 @@ contract TestToken is IBEP20, Auth {
             address(this),
             block.timestamp
         );
-        uint256 amountBNB = address(this).balance.sub(balanceBefore);
-        uint256 totalBNBFee = totalFee.sub(liquidityFee.div(2));
-        uint256 amountBNBLiquidity = amountBNB.mul(liquidityFee).div(totalBNBFee).div(2);
-        uint256 amountBNBdevelopment = amountBNB.mul(developmentFee).div(totalBNBFee);
-        uint256 amountBNBMarketing = amountBNB.mul(marketingFee).div(totalBNBFee);
+        uint256 bnbFromSwapBack = address(this).balance.sub(bnbBalanceBefore);
+        uint256 bnbForDevelopment = bnbFromSwapBack.mul(developmentFee).div(totalFee);
+        uint256 bnbForMarketing = bnbFromSwapBack.mul(marketingFee).div(totalFee);
 
-
-        (bool MarketingSuccess, /* bytes memory data */) = payable(marketingFeeReceiver).call{value: amountBNBMarketing, gas: 30000}("");
+        (bool MarketingSuccess, /* bytes memory data */) = payable(marketingFeeReceiver).call{value: bnbForMarketing, gas: 30000}("");
         require(MarketingSuccess, "receiver rejected ETH transfer");
-        (bool developmentSuccess, /* bytes memory data */) = payable(developmentFeeReceiver).call{value: amountBNBdevelopment, gas: 30000}("");
+        (bool developmentSuccess, /* bytes memory data */) = payable(developmentFeeReceiver).call{value: bnbForDevelopment, gas: 30000}("");
         require(developmentSuccess, "receiver rejected ETH transfer");
-
-        if(amountToLiquify > 0){
-            router.addLiquidityETH{value: amountBNBLiquidity}(
-                address(this),
-                amountToLiquify,
-                0,
-                0,
-                marketingFeeReceiver,
-                block.timestamp
-            );
-            emit AutoLiquify(amountBNBLiquidity, amountToLiquify);
-        }
-    }
-
-    function buyTokens(uint256 amount, address to) internal swapping {
-        address[] memory path = new address[](2);
-        path[0] = WBNB;
-        path[1] = address(this);
-
-        router.swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount}(
-            0,
-            path,
-            to,
-            block.timestamp
-        );
     }
 
     function launched() internal view returns (bool) {
@@ -378,12 +348,10 @@ contract TestToken is IBEP20, Auth {
         isTxLimitExempt[holder] = exempt;
     }
 
-    function setFees(uint256 _liquidityFee, uint256 _developmentFee, uint256 _marketingFee, uint256 _feeDenominator) external authorized {
-        liquidityFee = _liquidityFee;
+    function setFees(uint256 _developmentFee, uint256 _marketingFee) external authorized {
+        require(_developmentFee.add(_marketingFee) <= 10); // Combined fees can never go over 10%
         developmentFee = _developmentFee;
         marketingFee = _marketingFee;
-        totalFee = _liquidityFee.add(_developmentFee).add(_marketingFee);
-        feeDenominator = _feeDenominator;
     }
 
     function setFeeReceiver(address _marketingFeeReceiver, address _developmentFeeReceiver) external authorized {
@@ -398,11 +366,10 @@ contract TestToken is IBEP20, Auth {
 
     function manualSend() external authorized {
         uint256 contractETHBalance = address(this).balance;
-        payable(marketingFeeReceiver).transfer(contractETHBalance);
+        payable(developmentFeeReceiver).transfer(contractETHBalance);
     }
 
     function transferForeignToken(address _token) public authorized {
-        require(_token != address(this), "Can't let you take all native token");
         uint256 _contractBalance = IBEP20(_token).balanceOf(address(this));
         payable(marketingFeeReceiver).transfer(_contractBalance);
     }
@@ -410,14 +377,4 @@ contract TestToken is IBEP20, Auth {
     function getCirculatingSupply() public view returns (uint256) {
         return _totalSupply.sub(balanceOf(DEAD));
     }
-
-    function getLiquidityBacking(uint256 accuracy) public view returns (uint256) {
-        return accuracy.mul(balanceOf(pair).mul(2)).div(getCirculatingSupply());
-    }
-
-    function isOverLiquified(uint256 target, uint256 accuracy) public view returns (bool) {
-        return getLiquidityBacking(accuracy) > target;
-    }
-    
-    event AutoLiquify(uint256 amountBNB, uint256 amountBOG);
 }
