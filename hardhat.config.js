@@ -1,9 +1,12 @@
+require("@nomiclabs/hardhat-web3");
 require("@nomiclabs/hardhat-waffle");
 require("dotenv").config();
+
+// Secrets
 const mnemonic = process.env.MNEMONIC;
 const alchemyKey = process.env.ALCHEMY_API_KEY;
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
+
+// Tasks
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
 
@@ -12,6 +15,25 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+task("ethBalance", "Prints an account's ethereum balance")
+  .addParam("account", "The account's address")
+  .setAction(async (taskArgs) => {
+    const account = web3.utils.toChecksumAddress(taskArgs.account);
+    const balance = await web3.eth.getBalance(account);
+
+    console.log(web3.utils.fromWei(balance, "ether"), "ETH");
+  });
+
+task("tokenBalance", "Prints an account's test-token balance")
+  .addParam("account", "The account's address")
+  .setAction(async (taskArgs) => {
+    const account = web3.utils.toChecksumAddress(taskArgs.account);
+
+    const balance = await web3.eth.getBalance(account);
+
+    console.log(web3.utils.fromWei(balance, "ether"), "TTKN");
+  });
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
@@ -19,13 +41,13 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.5",
+  solidity: "0.8.14",
+
+  defaultNetwork: "localhost",
 
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545"
-    },
-    hardhat: {
     },
     testnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",

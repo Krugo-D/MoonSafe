@@ -14,12 +14,12 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const EmuInu = await hre.ethers.getContractFactory("EmuInu");
-  const emuInu = await EmuInu.deploy();
+  const Saitama = await hre.ethers.getContractFactory("Saitama");
+  const saitama = await Saitama.deploy();
 
-  await emuInu.deployed();
+  await saitama.deployed();
 
-  console.log("EmuInu deployed to:", emuInu.address);
+  console.log("Saitama deployed to:", saitama.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

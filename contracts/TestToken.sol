@@ -153,15 +153,14 @@ interface IDEXRouter {
     ) external;
 }
 
-contract EmuInu is IBEP20, Auth {
+contract TestToken is IBEP20, Auth {
     using SafeMath for uint256;
 
     address WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address DEAD = 0x000000000000000000000000000000000000dEaD;
-    address ZERO = 0x0000000000000000000000000000000000000000;
 
-    string constant _name = "EmuInu";
-    string constant _symbol = "EmuInu";
+    string constant _name = "TestToken";
+    string constant _symbol = "TT";
     uint8 constant _decimals = 9;
 
     uint256 _totalSupply = 1000000000 * (10 ** _decimals);
@@ -409,7 +408,7 @@ contract EmuInu is IBEP20, Auth {
     }
         
     function getCirculatingSupply() public view returns (uint256) {
-        return _totalSupply.sub(balanceOf(DEAD)).sub(balanceOf(ZERO));
+        return _totalSupply.sub(balanceOf(DEAD));
     }
 
     function getLiquidityBacking(uint256 accuracy) public view returns (uint256) {
