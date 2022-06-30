@@ -163,7 +163,7 @@ contract TestToken is IBEP20, Auth {
     string constant _symbol = "TT";
     uint8 constant _decimals = 9;
 
-    uint256 _totalSupply = 1_000_000_000 * (10 ** _decimals);
+    uint256 public _totalSupply = 1_000_000_000 * (10 ** _decimals);
     uint256 public _maxTxAmount = (_totalSupply * 1) / 200;
     uint256 public _maxWalletSize = (_totalSupply * 2) / 100;
 
@@ -330,46 +330,46 @@ contract TestToken is IBEP20, Auth {
         launchedAt = block.number;
     }
 
-    function setTxLimit(uint256 amount) external authorized {
+    function setTxLimit(uint256 amount) external onlyOwner {
         require(amount >= _totalSupply / 1000);
         _maxTxAmount = amount;
     }
 
-   function setMaxWallet(uint256 amount) external onlyOwner() {
+   function setMaxWallet(uint256 amount) external onlyOwner {
         require(amount >= _totalSupply / 1000 );
         _maxWalletSize = amount;
     }    
 
-    function setIsFeeExempt(address holder, bool exempt) external authorized {
+    function setIsFeeExempt(address holder, bool exempt) external onlyOwner {
         isFeeExempt[holder] = exempt;
     }
 
-    function setIsTxLimitExempt(address holder, bool exempt) external authorized {
+    function setIsTxLimitExempt(address holder, bool exempt) external onlyOwner {
         isTxLimitExempt[holder] = exempt;
     }
 
-    function setFees(uint256 _developmentFee, uint256 _marketingFee) external authorized {
+    function setFees(uint256 _developmentFee, uint256 _marketingFee) external onlyOwner {
         require(_developmentFee.add(_marketingFee) <= 10); // Combined fees can never go over 10%
         developmentFee = _developmentFee;
         marketingFee = _marketingFee;
     }
 
-    function setFeeReceiver(address _marketingFeeReceiver, address _developmentFeeReceiver) external authorized {
+    function setFeeReceiver(address _marketingFeeReceiver, address _developmentFeeReceiver) external onlyOwner {
         marketingFeeReceiver = _marketingFeeReceiver;
         developmentFeeReceiver = _developmentFeeReceiver;
     }
 
-    function setSwapBackSettings(bool _enabled, uint256 _amount) external authorized {
+    function setSwapBackSettings(bool _enabled, uint256 _amount) external onlyOwner {
         swapEnabled = _enabled;
         swapThreshold = _amount;
     }
 
-    function manualSend() external authorized {
+    function manualSend() external onlyOwner {
         uint256 contractETHBalance = address(this).balance;
         payable(developmentFeeReceiver).transfer(contractETHBalance);
     }
 
-    function transferForeignToken(address _token) public authorized {
+    function transferForeignToken(address _token) public onlyOwner {
         uint256 _contractBalance = IBEP20(_token).balanceOf(address(this));
         payable(marketingFeeReceiver).transfer(_contractBalance);
     }
