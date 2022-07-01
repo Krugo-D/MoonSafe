@@ -37,16 +37,10 @@ describe('TestToken Unit Test', function() {
         const marketingFeeReceiver = 0x3E188aa9e4511BE67Cb46eCE53e9e6f2Be35C1bf;
         const tokenAmountSend = 1_000_000
 
-        //Set fees and transfer tokens from owner to addr1
         await testToken.setFees(developmentFeeNumber, marketingFeeNumber);
         await testToken.transfer(addr1.address, tokenAmountSend);
         await testToken.connect(addr1).transfer(addr2.address, tokenAmountSend);
 
-        //Check if correct amount of marketing tokens end up in contract wallet
-        //console.log('marketing wallet address balance is: ' + await testToken.balanceOf('0x3E188aa9e4511BE67Cb46eCE53e9e6f2Be35C1bf'));
-        //console.log('owners balance is: ' + await testToken.balanceOf(owner.address))
-        //console.log('addr1 balance is: ' + await testToken.balanceOf(addr1.address))
-        //console.log('addr2 balance is: ' + await testToken.balanceOf(addr2.address))
         expect(await testToken.balanceOf(testToken.address)).to.equal((
             tokenAmountSend * (marketingFeeNumber + developmentFeeNumber) / 100).toString()
         );

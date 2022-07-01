@@ -2,6 +2,8 @@ const chai = require('chai');
 const { expect } = require('chai');
 const BN = require('bn.js');
 const { ethers } = require('hardhat');
+require("@nomiclabs/hardhat-waffle");
+
 
 // Enable and inject BN dependency
 chai.use(require('chai-bn')(BN));
@@ -13,10 +15,6 @@ describe('TestNft Unit Test', function() {
         await testNft.deployed()
     })
 
-    //beforeEach(async function() {
-    //    await testNft.mint();
-    //})
-
     it('Owner can mint before launch', async function () {
         const [owner] = await ethers.getSigners();
         await testNft.presaleMint([owner.address]);
@@ -26,10 +24,8 @@ describe('TestNft Unit Test', function() {
 
     it('Users can not use presaleMint function', async function () {
         const [owner, addr1] = await ethers.getSigners();
-        const balance = await testNft.balanceOf(addr1.address)
-        expect(balance.toString()).to.equal("0");
+        await expect(testNft.connect(addr1).presaleMint([addr1.address])).to.be.revertedWith("!OWNER");
     });
  
     
-
 })
