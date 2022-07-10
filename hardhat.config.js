@@ -5,6 +5,7 @@ require("dotenv").config();
 // Secrets
 const mnemonic = process.env.MNEMONIC;
 const alchemyKey = process.env.ALCHEMY_API_KEY;
+console.log(mnemonic);
 
 // Tasks
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -41,13 +42,14 @@ task("tokenBalance", "Prints an account's test-token balance")
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.14",
+  solidity: "0.6.12",
 
   defaultNetwork: "localhost",
 
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545"
+      url: "http://127.0.0.1:8545",
+      accounts: {mnemonic}
     },
     testnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
