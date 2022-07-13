@@ -31,6 +31,8 @@ async function main() {
     (Date.now() + 100000)
   );
 
+  await owner.call(lpAddTx);
+
   // check if owner has succesfully send out tokens 
   const tokenBalanceAfter = await moonSafe.balanceOf(owner.address);
   console.log(`tokenbalance after: ${tokenBalanceAfter}`);
