@@ -1,9 +1,3 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-const { Signer } = require("ethers");
 const hre = require("hardhat");
 
 async function main() {
@@ -22,12 +16,13 @@ async function main() {
   await moonSafe.connect(owner).approve(router.address, max);
 
   // define amounts to add to LP
-  const tokenBalance = await moonSafe.balanceOf(owner.address);
-  console.log(tokenBalance)
-  const tokensToAdd = tokenBalance;
-  const ethToAdd = 100;
+  const tokenBalanceBefore = await moonSafe.balanceOf(owner.address);
+  console.log(`tokenbalance before: ${tokenBalanceBefore}`)
+  const tokensToAdd = tokenBalanceBefore.div(2);
+  const ethToAdd = 1;
 
-  await router.connect(owner).addLiquidityETH(
+  // add liquidity
+  const lpAddTx = await router.populateTransaction.addLiquidityETH(
     moonSafe.address,
     tokensToAdd,
     0, // slippage is unavoidable
@@ -36,11 +31,15 @@ async function main() {
     (Date.now() + 100000)
   );
 
+  // check if owner has succesfully send out tokens 
+  const tokenBalanceAfter = await moonSafe.balanceOf(owner.address);
+  console.log(`tokenbalance after: ${tokenBalanceAfter}`);
+
+  // check if owner has received LP tokens in exchange for tokens
   const pairAddress = await moonSafe.uniswapV2Pair();
   const pair = await hre.ethers.getContractAt("IUniswapV2Pair", pairAddress);
   const lpBalance = await pair.balanceOf(owner.address)
-  console.log(lpBalance);
-
+  console.log(`lp balance after: ${lpBalance}`);
 }
 
 main()
@@ -48,4 +47,4 @@ main()
   .catch((error) => {
     console.error(error);
     process.exit(1);
-  });
+});
