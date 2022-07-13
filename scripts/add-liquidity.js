@@ -5,21 +5,22 @@ async function main() {
   // get signer
   const [owner] = await ethers.getSigners();
 
-  // WETH address on mainnet
-  const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-
   // We get the deployed MoonSafe contract
   const moonSafe = await hre.ethers.getContractAt("MoonSafe", '0x2dd2812b07B59Cb89E8077c6CB42c6D6ee08ca12');
   const routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
   const uRouter = await hre.ethers.getContractAt('IUniswapV2Router02', routerAddress);
   const router = uRouter.connect(owner)
 
-  // approve router to use max amount of tokens and WETH from owner's wallet
+  // approve router to use max amount of tokens from owner's wallet
   const max = (2^256 - 1);
   await moonSafe.connect(owner).approve(routerAddress, max);
-  await moonSafe.connect(owner).approve(wethAddress, max);
 
   // approve router to use max amount of WETH from owner's wallet
+  const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+  const weth = await hre.ethers.getContractAt("IERC20", wethAddress);
+  await weth.connect(owner).approve(routerAddress, max);
+
+  await moonSafe.connect(owner).approve(routerAddress, max);
 
   // define amounts to add to LP
   const tokenBalanceBefore = await moonSafe.balanceOf(owner.address);
