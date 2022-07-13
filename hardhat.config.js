@@ -4,7 +4,7 @@ require("dotenv").config();
 
 // Secrets
 const mnemonic = process.env.MNEMONIC;
-const moralisUrl = process.env.MORALIS_NODE_URL;
+const endpointUrl = process.env.ENDPOINT_URL;
 
 // Tasks
 //task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -49,7 +49,8 @@ module.exports = {
     hardhat: {
       accounts: {mnemonic},
       forking: {
-        url: moralisUrl,
+        url: endpointUrl,
+        blockNumber: 14390000,
       }
     }
     //localhost: {
