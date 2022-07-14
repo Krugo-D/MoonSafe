@@ -15,8 +15,7 @@ async function main() {
 
   // get uniswap router
   const routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
-  const uRouter = await hre.ethers.getContractAt('IUniswapV2Router02', routerAddress);
-  const router = uRouter.connect(owner)
+  const router = await hre.ethers.getContractAt('IUniswapV2Router02', routerAddress);
 
   // define amounts to add to LP
   const tokenBalanceBefore = await moonSafe.balanceOf(owner.address);
@@ -31,14 +30,6 @@ async function main() {
   const pairAddress = await moonSafe.uniswapV2Pair();
   const pair = await hre.ethers.getContractAt('IUniswapV2Pair', pairAddress);
   await pair.connect(owner).approve(routerAddress, '1000000000000000000000000');
-
-  // approve router address to spent WETH from owner's wallet
-  const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-  const weth = await hre.ethers.getContractAt("IERC20", wethAddress);
-  await weth.connect(owner).approve(routerAddress, baseCurToAdd);
-
-  // add 1000 wei of token and WETH to pair
-  //await moonSafe.connect(owner).transfer(pairAddress, '100000000000000');
 
   // add liquidity
   const lpAddTx = await router.connect(owner).addLiquidityETH(
