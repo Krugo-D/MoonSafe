@@ -16,10 +16,10 @@ async function main() {
   // We get the contract to deploy
   const MoonSafe = await hre.ethers.getContractFactory("MoonSafe");
   const moonSafe = await MoonSafe.deploy();
-
   await moonSafe.deployed();
   
   console.log("MoonSafe deployed to:", moonSafe.address);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -29,4 +29,4 @@ main()
   .catch((error) => {
     console.error(error);
     process.exit(1);
-  });
+});
